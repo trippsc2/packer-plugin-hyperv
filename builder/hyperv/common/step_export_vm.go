@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/hashicorp/packer-plugin-hyperv/builder/hyperv/common/wsl"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -34,10 +35,22 @@ func (s *StepExportVm) Run(ctx context.Context, state multistep.StateBag) multis
 		vmName = v.(string)
 	}
 
+	var outputDir string = s.OutputDir
+
+	if wsl.IsWSL() {
+		var err error
+		outputDir, err = wsl.ConvertWSlPathToWindowsPath(outputDir)
+		if err != nil {
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+	}
+
 	// The export process exports the VM to a folder named 'vmName' under
 	// the output directory. This contains the usual 'Snapshots', 'Virtual
 	// Hard Disks' and 'Virtual Machines' directories.
-	err := driver.ExportVirtualMachine(vmName, s.OutputDir)
+	err := driver.ExportVirtualMachine(vmName, outputDir)
 	if err != nil {
 		err = fmt.Errorf("Error exporting vm: %s", err)
 		state.Put("error", err)
@@ -46,7 +59,7 @@ func (s *StepExportVm) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	// Store the path to the export directory for later steps
-	exportPath := filepath.Join(s.OutputDir, vmName)
+	exportPath := filepath.Join(outputDir, vmName)
 	state.Put("export_path", exportPath)
 
 	return multistep.ActionContinue

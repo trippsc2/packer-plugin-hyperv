@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/packer-plugin-hyperv/builder/hyperv/common/wsl"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -64,7 +65,18 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	// convert the MB to bytes
 	ramSize := int64(s.RamSize * 1024 * 1024)
 
-	err := driver.CloneVirtualMachine(s.CloneFromVMCXPath, s.CloneFromVMName,
+	var cloneFromVMCXPath string = s.CloneFromVMCXPath
+	if wsl.IsWSL() {
+		var err error
+		cloneFromVMCXPath, err = wsl.ConvertWSlPathToWindowsPath(s.CloneFromVMCXPath)
+		if err != nil {
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+	}
+
+	err := driver.CloneVirtualMachine(cloneFromVMCXPath, s.CloneFromVMName,
 		s.CloneFromSnapshotName, s.CloneAllSnapshots, s.VMName, path,
 		harddrivePath, ramSize, s.SwitchName, s.CompareCopy)
 	if err != nil {
