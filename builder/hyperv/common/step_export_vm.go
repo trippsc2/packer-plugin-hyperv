@@ -59,7 +59,7 @@ func (s *StepExportVm) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	// Store the path to the export directory for later steps
-	exportPath := filepath.Join(outputDir, vmName)
+	exportPath := filepath.Join(s.OutputDir, vmName)
 	state.Put("export_path", exportPath)
 
 	return multistep.ActionContinue
