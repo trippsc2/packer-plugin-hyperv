@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/packer-plugin-hyperv/builder/hyperv/common/wsl"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -48,6 +49,16 @@ func (s *StepMountSecondaryDvdImages) Run(ctx context.Context, state multistep.S
 	}
 
 	for _, isoPath := range isoPaths {
+		if wsl.IsWSL() {
+			var err error
+			isoPath, err = wsl.ConvertWSlPathToWindowsPath(isoPath)
+			if err != nil {
+				state.Put("error", err)
+				ui.Error(err.Error())
+				return multistep.ActionHalt
+			}
+		}
+
 		var properties DvdControllerProperties
 
 		controllerNumber, controllerLocation, err := driver.CreateDvdDrive(vmName, isoPath, s.Generation)
