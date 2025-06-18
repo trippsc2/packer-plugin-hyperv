@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/packer-plugin-hyperv/builder/hyperv/common/wsl"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -51,6 +52,16 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	var path string
 	if v, ok := state.GetOk("build_dir"); ok {
 		path = v.(string)
+
+		if wsl.IsWSL() {
+			var err error
+			path, err = wsl.ConvertWSlPathToWindowsPath(path)
+			if err != nil {
+				state.Put("error", err)
+				ui.Error(err.Error())
+				return multistep.ActionHalt
+			}
+		}
 	}
 
 	err := driver.CheckVMName(s.VMName)
