@@ -49,6 +49,16 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 
 	path := state.Get("build_dir").(string)
 
+	if wsl.IsWSL() {
+		var err error
+		path, err = wsl.ConvertWSlPathToWindowsPath(path)
+		if err != nil {
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+	}
+
 	// Determine if we even have an existing virtual harddrive to attach
 	harddrivePath := ""
 	if harddrivePathRaw, ok := state.GetOk("iso_path"); ok {
