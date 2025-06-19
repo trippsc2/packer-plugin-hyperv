@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/packer-plugin-hyperv/builder/hyperv/common/wsl"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -29,6 +30,16 @@ func (s *StepCompactDisk) Run(ctx context.Context, state multistep.StateBag) mul
 	var buildDir string
 	if v, ok := state.GetOk("build_dir"); ok {
 		buildDir = v.(string)
+	}
+
+	if wsl.IsWSL() {
+		var err error
+		buildDir, err = wsl.ConvertWSlPathToWindowsPath(buildDir)
+		if err != nil {
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
 	}
 
 	ui.Say("Compacting disks...")
